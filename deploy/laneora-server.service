@@ -1,0 +1,16 @@
+[Unit]
+Description=Laneora Rust session server
+After=network.target
+
+[Service]
+User=laneora
+Group=laneora
+WorkingDirectory=/opt/laneora-rust
+EnvironmentFile=/etc/laneora-rust.env
+ExecStart=/opt/laneora-rust/laneora-server
+Restart=always
+RestartSec=2
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

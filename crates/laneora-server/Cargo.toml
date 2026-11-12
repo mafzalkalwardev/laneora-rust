@@ -1,0 +1,30 @@
+[package]
+name = "laneora-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Axum + SQLite admin and session server for Laneora Rust"
+
+[dependencies]
+anyhow = "1"
+argon2 = "0.5"
+axum = { version = "0.7", features = ["json", "macros"] }
+base64 = "0.22"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+hex = "0.4"
+hmac = "0.12"
+laneora-core = { path = "../laneora-core" }
+rand = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite", "macros"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "fs", "io-util", "signal"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tempfile = "3"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

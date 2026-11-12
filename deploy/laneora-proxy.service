@@ -1,0 +1,13 @@
+[Unit]
+Description=Laneora Rust WireGuard HTTP proxy
+After=network.target wg-quick@wg0.service
+Requires=wg-quick@wg0.service
+
+[Service]
+EnvironmentFile=/etc/laneora-proxy.env
+ExecStart=/opt/laneora-rust/laneora-proxy
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

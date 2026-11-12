@@ -1,0 +1,35 @@
+:root { color-scheme: dark; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #0B1220;
+  color: #E8EEF7;
+  font: 16px/1.4 "Segoe UI", sans-serif;
+}
+main { width: min(420px, calc(100% - 32px)); }
+h1 { color: #F5A524; margin-bottom: 4px; }
+.sub, #status { color: #9AA8BC; }
+label { display: block; margin: 12px 0 6px; font-weight: 600; }
+input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #141C2B;
+  color: inherit;
+  border: 1px solid #2A364A;
+  border-radius: 10px;
+  padding: 12px;
+}
+button {
+  margin-top: 16px;
+  background: #F5A524;
+  color: #1A1203;
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#error { color: #F07178; min-height: 1.2em; }
+#buttons { display: grid; gap: 10px; }

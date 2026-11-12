@@ -1,0 +1,13 @@
+/target
+**/*.rs.bk
+**/*.sqlite
+**/*.sqlite-*
+**/*.sqlite-journal
+.env
+.env.*
+*.key
+laneora.key
+wg0.conf
+oracle_indus
+oracle_indus.pub
+/dist

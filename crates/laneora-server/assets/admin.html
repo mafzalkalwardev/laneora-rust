@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Laneora Rust Admin</title>
+  <style>
+    :root { --bg:#0B1220; --card:#121A2A; --line:#2A364A; --text:#E8EEF7; --muted:#9AA8BC; --amber:#F5A524; --danger:#F07178; --ok:#7DCEA0; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; background:radial-gradient(1000px 420px at 50% -10%, #1A2740, var(--bg) 55%); color:var(--text); font:16px/1.4 "Segoe UI", sans-serif; }
+    button, input, select, textarea { font:inherit; color:inherit; }
+    button { cursor:pointer; }
+    .wrap { width:min(1080px, calc(100% - 32px)); margin:0 auto; padding:28px 0 64px; }
+    .login-wrap { min-height:100vh; display:grid; place-items:center; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:22px; }
+    .login-card { width:min(420px, calc(100% - 32px)); }
+    h1 { margin:0 0 6px; color:var(--amber); }
+    .sub, .muted { color:var(--muted); }
+    label { display:block; font-weight:600; margin:12px 0 6px; }
+    input, select, textarea { width:100%; background:#141C2B; border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+    textarea { min-height:90px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+    .row > * { flex:1; min-width:140px; }
+    .btn { background:var(--amber); color:#1A1203; border:0; border-radius:10px; padding:10px 14px; font-weight:700; }
+    .ghost { background:transparent; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:8px 12px; }
+    .danger { background:transparent; color:var(--danger); border:1px solid var(--danger); border-radius:10px; padding:8px 12px; }
+    .stats { display:flex; gap:12px; flex-wrap:wrap; margin:18px 0; }
+    .stat { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 16px; min-width:110px; }
+    .stat b { display:block; font-size:22px; color:var(--amber); }
+    .user { margin-top:14px; }
+    .error { color:var(--danger); min-height:1.2em; }
+    .ok { color:var(--ok); }
+    .top { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    [hidden] { display:none !important; }
+  </style>
+</head>
+<body>
+  <div id="login" class="login-wrap">
+    <form class="card login-card" id="login-form">
+      <h1>Laneora Rust</h1>
+      <p class="sub">Admin desk</p>
+      <label>Username</label>
+      <input name="username" autocomplete="username" required />
+      <label>Password</label>
+      <input name="password" type="password" autocomplete="current-password" required />
+      <p class="error" id="login-error"></p>
+      <button class="btn" type="submit">Sign in</button>
+    </form>
+  </div>
+  <main id="desk" class="wrap" hidden>
+    <div class="top">
+      <div>
+        <h1>Laneora Rust</h1>
+        <p class="sub">Users, plans, and the shared DAT session</p>
+      </div>
+      <button class="ghost" id="logout" type="button">Sign out</button>
+    </div>
+    <div class="stats" id="stats"></div>
+    <section class="card">
+      <h2>New dispatcher</h2>
+      <form id="create-form" class="row">
+        <div><label>Username</label><input name="username" required /></div>
+        <div><label>Password</label><input name="password" required /></div>
+        <div><label>Plan</label><select name="plan" id="plan-select"></select></div>
+        <div><label>Services</label><input name="services" value="dat" /></div>
+        <div><button class="btn" type="submit">Create</button></div>
+      </form>
+      <p class="error" id="create-error"></p>
+    </section>
+    <section class="card" style="margin-top:14px">
+      <h2>Shared proxy</h2>
+      <form id="proxy-form" class="row">
+        <div><label>Host</label><input name="px" placeholder="none" /></div>
+        <div><label>Port</label><input name="p" placeholder="8888" /></div>
+        <div><label>User</label><input name="pu" /></div>
+        <div><label>Password</label><input name="pd" /></div>
+        <div><button class="btn" type="submit">Save proxy</button></div>
+      </form>
+      <p class="muted" id="proxy-url"></p>
+      <label><input id="multi" type="checkbox" style="width:auto" /> Allow the same username on more than one screen</label>
+    </section>
+    <section class="card" style="margin-top:14px">
+      <h2>Push DAT cookies</h2>
+      <p class="muted">Leave the username empty to update every dispatcher. Paste the captured cookie array.</p>
+      <form id="cookie-form">
+        <label>Username</label>
+        <input name="username" placeholder="all users" />
+        <label>Cookie JSON</label>
+        <textarea name="store" placeholder='[{"name":"dat","value":"...","domain":".dat.com","path":"/"}]'></textarea>
+        <p class="error" id="cookie-error"></p>
+        <button class="btn" type="submit">Push cookies</button>
+      </form>
+    </section>
+    <div id="users"></div>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    async function api(path, body) {
+      const response = await fetch(path, {
+        method: body ? "POST" : "GET",
+        headers: body ? { "content-type": "application/json" } : {},
+        body: body ? JSON.stringify(body) : undefined,
+        credentials: "same-origin",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) throw new Error(data.error || "Request failed");
+      return data;
+    }
+    async function load() {
+      try {
+        const data = await api("/admin/api/users");
+        $("login").hidden = true;
+        $("desk").hidden = false;
+        render(data);
+      } catch (err) {
+        $("login").hidden = false;
+        $("desk").hidden = true;
+      }
+    }
+    function render(data) {
+      const summary = data.summary || {};
+      $("stats").innerHTML = ["total", "active", "expired", "disabled", "unset"].map((key) =>
+        `<div class="stat"><b>${summary[key] || 0}</b><span class="muted">${key}</span></div>`).join("");
+      const plans = data.plans || [];
+      $("plan-select").innerHTML = `<option value="">No plan yet</option>` + plans.map((plan) =>
+        `<option value="${plan.id}">${plan.label}</option>`).join("");
+      const proxy = data.proxy || {};
+      const form = $("proxy-form");
+      form.px.value = proxy.px || "none";
+      form.p.value = proxy.p || "0";
+      form.pu.value = proxy.pu || "";
+      form.pd.value = proxy.pd || "";
+      $("multi").checked = !!data.allow_multi_screen;
+      $("users").innerHTML = (data.users || []).map((user) => `
+        <article class="card user" data-user="${user.username}">
+          <div class="top">
+            <div><strong>${user.username}</strong> <span class="muted">${user.status}${user.plan_label ? " · " + user.plan_label : ""}</span></div>
+            <button class="danger" data-delete="${user.username}" type="button">Delete</button>
+          </div>
+          <p class="muted">Ends ${user.subscription_end || "when you apply a plan"} · services ${(user.services || []).join(", ")}</p>
+          <div class="row">
+            <div><label>Plan</label><select data-plan="${user.username}">${plans.map((plan) => `<option value="${plan.id}" ${plan.id === user.plan ? "selected" : ""}>${plan.label}</option>`).join("")}</select></div>
+            <div><label>Services</label><input data-services="${user.username}" value="${(user.services || []).join(",")}" /></div>
+            <div><label>New password</label><input data-password="${user.username}" /></div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn" data-apply="${user.username}" type="button">Apply from now</button>
+            <button class="ghost" data-extend="${user.username}" type="button">Add onto current</button>
+            <button class="ghost" data-save="${user.username}" type="button">Save services and password</button>
+            <button class="ghost" data-active="${user.username}" data-on="${user.active ? "0" : "1"}" type="button">${user.active ? "Disable" : "Enable"}</button>
+          </div>
+        </article>`).join("");
+    }
+    $("login-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.target;
+      try {
+        await api("/admin/api/login", { username: form.username.value, password: form.password.value });
+        $("login-error").textContent = "";
+        await load();
+      } catch (err) { $("login-error").textContent = err.message; }
+    });
+    $("logout").addEventListener("click", async () => { await api("/admin/api/logout", {}); location.reload(); });
+    $("create-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.target;
+      try {
+        await api("/admin/api/users", {
+          username: form.username.value,
+          password: form.password.value,
+          plan: form.plan.value,
+          services: form.services.value,
+        });
+        form.reset();
+        $("create-error").textContent = "";
+        await load();
+      } catch (err) { $("create-error").textContent = err.message; }
+    });
+    $("proxy-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.target;
+      const data = await api("/admin/api/proxy", { px: form.px.value, p: form.p.value, pu: form.pu.value, pd: form.pd.value });
+      $("proxy-url").textContent = data.proxy_url || "Direct. No shared proxy.";
+    });
+    $("multi").addEventListener("change", async (event) => {
+      await api("/admin/api/settings", { allow_multi_screen: event.target.checked });
+    });
+    $("cookie-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.target;
+      try {
+        const store = JSON.parse(form.store.value || "[]");
+        const data = await api("/admin/api/cookies", { username: form.username.value, store });
+        $("cookie-error").textContent = "";
+        $("cookie-error").className = "ok";
+        $("cookie-error").textContent = `Updated ${data.users} user${data.users === 1 ? "" : "s"}.`;
+      } catch (err) {
+        $("cookie-error").className = "error";
+        $("cookie-error").textContent = err.message;
+      }
+    });
+    $("users").addEventListener("click", async (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      const name = button.dataset.delete || button.dataset.apply || button.dataset.extend || button.dataset.save || button.dataset.active;
+      try {
+        if (button.dataset.delete) await api("/admin/api/users/delete", { username: name });
+        if (button.dataset.apply || button.dataset.extend) {
+          const plan = document.querySelector(`[data-plan="${name}"]`).value;
+          await api("/admin/api/users/update", { username: name, plan, extend: !!button.dataset.extend });
+        }
+        if (button.dataset.save) {
+          await api("/admin/api/users/update", {
+            username: name,
+            services: document.querySelector(`[data-services="${name}"]`).value,
+            password: document.querySelector(`[data-password="${name}"]`).value,
+          });
+        }
+        if (button.dataset.active) {
+          await api("/admin/api/users/update", { username: name, active: button.dataset.on === "1" });
+        }
+        await load();
+      } catch (err) { alert(err.message); }
+    });
+    load();
+  </script>
+</body>
+</html>

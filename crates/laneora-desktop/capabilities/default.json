@@ -1,0 +1,6 @@
+{
+  "identifier": "default",
+  "description": "Laneora launcher windows",
+  "windows": ["main", "dat"],
+  "permissions": ["core:default"]
+}

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Laneora Rust</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <h1>Laneora Rust</h1>
+    <p class="sub">Sign in with the username your admin created.</p>
+    <form id="login">
+      <label>Server</label>
+      <input id="server" value="https://laneora.induswebagency.com" />
+      <label>Username</label>
+      <input id="username" autocomplete="username" />
+      <label>Password</label>
+      <input id="password" type="password" autocomplete="current-password" />
+      <p id="error"></p>
+      <button type="submit">Login</button>
+    </form>
+    <section id="modules" hidden>
+      <p id="status"></p>
+      <div id="buttons"></div>
+    </section>
+  </main>
+  <script src="main.js"></script>
+</body>
+</html>
